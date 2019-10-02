@@ -1,0 +1,9 @@
+[package]
+name = "x86emu"
+version = "0.1.0"
+authors = ["Asami Doi <d0iasm.pub@gmail.com>"]
+edition = "2019"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
