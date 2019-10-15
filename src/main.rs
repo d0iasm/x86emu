@@ -31,6 +31,28 @@ struct Emulator {
     eip: usize,
 }
 
+fn read_binary(emu: &mut Emulator, filename: &String) -> u64 {
+    let path = Path::new(&filename);
+	let display = path.display();
+
+	let mut file = match File::open(&path) {
+        Err(why) => panic!("couldn't open {}: {}", display,
+                                                   why.description()),
+        Ok(file) => file,
+    };
+    let file_len = file.metadata().unwrap().len();
+
+	let mut binary = Vec::<u8>::new();
+    match file.read_to_end(&mut binary) {
+        Err(why) => panic!("couldn't read {}: {}", display,
+                                                   why.description()),
+        Ok(_) => println!("read file from {}\n", display),
+    }
+    emu.mem = binary;
+
+    return file_len;
+}
+
 fn create_emu(eip: usize, esp: u32) -> Emulator {
     let memory = Vec::new();
     let mut registers = [0; REGISTERS_COUNT];
@@ -68,6 +90,10 @@ fn get_code32(emu: &mut Emulator, index: usize) -> u32 {
     return ret;
 }
 
+fn get_sign_code32(emu: &mut Emulator, index: usize) -> i32 {
+    return get_code32(emu, index) as i32;
+}
+
 // MOV r32, imm32: Move imm32 to r32.
 fn mov_r32_imm32(emu: &mut Emulator) {
     let reg: usize = (get_code8(emu, 0) - 0xB8).try_into().unwrap();
@@ -82,6 +108,12 @@ fn short_jump(emu: &mut Emulator) {
     emu.eip += diff + 2;
 }
 
+// JMP rel32: Jump near, relative, RIP = RIP + 32-bit displacement sign extended to 64-bits.
+fn near_jump(emu: &mut Emulator) {
+    let diff = get_sign_code32(emu, 1) as usize;
+    emu.eip += diff + 5;
+}
+
 fn nop(_emu: &mut Emulator) {
 }
 
@@ -89,6 +121,7 @@ fn init_instructions(instructions: &mut Insts) {
 	for i in 0..8 {
         instructions[0xB8 + i] = mov_r32_imm32;
 	}
+    instructions[0xE9] = near_jump;
     instructions[0xEB] = short_jump;
 }
 
@@ -101,34 +134,17 @@ fn main() {
     }
 
     let mut emu = create_emu(0x0000, 0x7c00);
-
-    let path = Path::new(&args[1]);
-	let display = path.display();
-
-	let mut file = match File::open(&path) {
-        Err(why) => panic!("couldn't open {}: {}", display,
-                                                   why.description()),
-        Ok(file) => file,
-    };
-    let file_len = file.metadata().unwrap().len();
-
-	let mut binary = Vec::<u8>::new();
-    match file.read_to_end(&mut binary) {
-        Err(why) => panic!("couldn't read {}: {}", display,
-                                                   why.description()),
-        Ok(_) => println!("read file from {}\n", display),
-    }
-    emu.mem = binary;
+    let len = read_binary(&mut emu, &args[1]);
 
     let mut instructions: Insts = [nop; 256];
     init_instructions(&mut instructions);
 
     while emu.eip < MEMORY_SIZE {
         let code = get_code8(&mut emu, 0) as usize;
-        println!("EIP = {}, Code = {}", emu.eip, code);
+        println!("eip = {}, code = {}", emu.eip, code);
 
         if instructions[code] as usize == nop as usize {
-            println!("Not implemented: {0}", code);
+            println!("not implemented: {0}", code);
             break;
         }
 
@@ -136,8 +152,8 @@ fn main() {
         instructions[code](&mut emu);
 
         // TODO: when does a program finish?
-        if emu.eip == file_len as usize {
-            println!("\nEnd of program.\n");
+        if emu.eip == len as usize {
+            println!("\nend of program\n");
             break;
         }
     }
