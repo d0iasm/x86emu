@@ -3,3 +3,4 @@ x86 emulator in Rust. This is a porting from the implementation written by C in 
 
 ## References
 - https://book.mynavi.jp/support/bookmook/x86/
+- https://www.felixcloutier.com/x86/
