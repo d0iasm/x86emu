@@ -7,6 +7,11 @@ use std::io::Read;
 use std::path::Path;
 use std::vec::Vec;
 
+pub mod instruction;
+pub mod function;
+use instruction::*;
+use function::*;
+
 // Memory size is 1MiB.
 const MEMORY_SIZE: usize = 1024 * 1024;
 
@@ -24,7 +29,7 @@ const REGISTERS_NAME: [&str; 8] = ["EAX", "ECX", "EDX", "EBX", "ESP", "EBP", "ES
 type InstFunc = fn(&mut Emulator);
 type Insts = [InstFunc; 256];
 
-struct Emulator {
+pub struct Emulator {
     regs: [u32; REGISTERS_COUNT],
     eflags: u32,
     mem: Vec<u8>,
@@ -70,59 +75,6 @@ fn dump_registers(emu: &mut Emulator) {
         println!("{0} = {1}", REGISTERS_NAME[i], emu.regs[i])
     }
     println!("EIP = {}", emu.eip)
-}
-
-fn get_code8(emu: &mut Emulator, index: usize) -> u32 {
-    return emu.mem[emu.eip + index] as u32;
-}
-
-fn get_sign_code8(emu: &mut Emulator, index: usize) -> i32 {
-    return emu.mem[emu.eip + index] as i32;
-}
-
-fn get_code32(emu: &mut Emulator, index: usize) -> u32 {
-    let mut ret: u32 = 0;
-
-    // Little endian.
-    for i in 0..4 {
-        ret |= get_code8(emu, index + i) << (i * 8);
-    }
-    return ret;
-}
-
-fn get_sign_code32(emu: &mut Emulator, index: usize) -> i32 {
-    return get_code32(emu, index) as i32;
-}
-
-// MOV r32, imm32: Move imm32 to r32.
-fn mov_r32_imm32(emu: &mut Emulator) {
-    let reg: usize = (get_code8(emu, 0) - 0xB8).try_into().unwrap();
-    let value = get_code32(emu, 1);
-    emu.regs[reg] = value;
-    emu.eip += 5;
-}
-
-// JMP rel8: Jump short, relative, displacement relative to next instruction.
-fn short_jump(emu: &mut Emulator) {
-    let diff = get_sign_code8(emu, 1) as usize;
-    emu.eip += diff + 2;
-}
-
-// JMP rel32: Jump near, relative, RIP = RIP + 32-bit displacement sign extended to 64-bits.
-fn near_jump(emu: &mut Emulator) {
-    let diff = get_sign_code32(emu, 1) as usize;
-    emu.eip += diff + 5;
-}
-
-fn nop(_emu: &mut Emulator) {
-}
-
-fn init_instructions(instructions: &mut Insts) {
-	for i in 0..8 {
-        instructions[0xB8 + i] = mov_r32_imm32;
-	}
-    instructions[0xE9] = near_jump;
-    instructions[0xEB] = short_jump;
 }
 
 fn main() {
