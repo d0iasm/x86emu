@@ -5,3 +5,6 @@
 !src
 src/*
 !src/*.rs
+!test
+test/*
+!test/*
