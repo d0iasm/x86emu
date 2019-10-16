@@ -9,6 +9,7 @@ use std::vec::Vec;
 
 pub mod instruction;
 pub mod function;
+pub mod modrm;
 use instruction::*;
 use function::*;
 
