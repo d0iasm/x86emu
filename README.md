@@ -3,7 +3,7 @@ x86 emulator in Rust. This is a porting from the implementation written by C in 
 
 ## Usage
 ```
-$ cargo run test/test_mov_r32_imm32
+$ cargo run test/mov_r32_imm32
 ```
 
 ## References
