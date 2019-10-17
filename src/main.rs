@@ -54,28 +54,30 @@ fn read_binary(emu: &mut Emulator, filename: &String) -> u64 {
                                                    why.description()),
         Ok(_) => println!("read file from {}\n", display),
     }
-    emu.mem = binary;
+
+    // BIOS loads MBR (Master Boot Record) into 0x7c00 in x86 system.
+    emu.mem = vec![0; 0x7c00];
+    emu.mem.extend(binary);
 
     return file_len;
 }
 
 fn create_emu(eip: usize, esp: u32) -> Emulator {
-    let memory = Vec::new();
     let mut registers = [0; REGISTERS_COUNT];
     registers[ESP] = esp;
     return Emulator {
         regs: registers,
         eflags: 0,
-        mem: memory,
+        mem: Vec::new(),
         eip: eip,
     };
 }
 
 fn dump_registers(emu: &mut Emulator) {
     for i in 0..REGISTERS_COUNT {
-        println!("{0} = {1}", REGISTERS_NAME[i], emu.regs[i])
+        println!("{0} = {1}", REGISTERS_NAME[i], get_register32(emu, i));
     }
-    println!("EIP = {}", emu.eip)
+    println!("EIP = {}", emu.eip);
 }
 
 fn main() {
@@ -86,8 +88,8 @@ fn main() {
         process::exit(1);
     }
 
-    let mut emu = create_emu(0x0000, 0x7c00);
-    let len = read_binary(&mut emu, &args[1]);
+    let mut emu = create_emu(0x7c00, 0x7c00);
+    let len = read_binary(&mut emu, &args[1]) + 0x7c00;
 
     let mut instructions: Insts = [nop; 256];
     init_instructions(&mut instructions);

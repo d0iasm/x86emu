@@ -17,7 +17,7 @@ result:
   EBP = 0
   ESI = 0
   EDI = 0
-  EIP = 15
+  EIP = 31759
 ```
 
 ## mov_r32_rm32
@@ -28,7 +28,7 @@ asm:
   0x0000000000000000:  B9 02 00 00 00    mov ecx, 2
   0x0000000000000005:  8B 01             mov eax, dword ptr [ecx]
 result:
-  EAX = 2332033024 // garbage value at [0x02]
+  EAX = 0 // garbage value at [0x02]
   ECX = 2
   EDX = 0
   EBX = 0
@@ -36,7 +36,7 @@ result:
   EBP = 0
   ESI = 0
   EDI = 0
-  EIP = 7
+  EIP = 31751
 ```
 
 ## mov_rm32_r32
@@ -56,7 +56,7 @@ result:
   EBP = 0
   ESI = 0
   EDI = 0
-  EIP = 9
+  EIP = 31753
 ```
 
 ## short_jump
@@ -76,7 +76,7 @@ result:
   EBP = 0
   ESI = 0
   EDI = 0
-  EIP = 12
+  EIP = 31756
 ```
 
 ## near_jump
@@ -96,7 +96,7 @@ result:
   EBP = 0
   ESI = 0
   EDI = 0
-  EIP = 15
+  EIP = 31759
 ```
 
 ## add_rm32_r32
@@ -116,5 +116,5 @@ result:
   EBP = 0
   ESI = 0
   EDI = 0
-  EIP = 12
+  EIP = 31756
 ```
