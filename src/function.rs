@@ -53,3 +53,16 @@ pub fn get_memory32(emu: &mut Emulator, address: usize) -> u32 {
     }
     return ret;
 }
+
+pub fn push32(emu: &mut Emulator, value: u32) {
+    let address = get_register32(emu, ESP) - 4;
+    set_register32(emu, ESP, address.try_into().unwrap());
+    set_memory32(emu, address.try_into().unwrap(), value);
+}
+
+pub fn pop32(emu: &mut Emulator) -> u32 {
+    let address = get_register32(emu, ESP);
+    let ret = get_memory32(emu, address.try_into().unwrap());
+    set_register32(emu, ESP, (address + 4).try_into().unwrap());
+    return ret;
+}

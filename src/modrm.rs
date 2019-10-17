@@ -108,8 +108,10 @@ pub fn calc_memory_address(emu: &mut Emulator, modrm: &ModRM) -> u32 {
 
 // Get rm32 register or 32-bit data from a memory.
 pub fn get_rm32(emu: &mut Emulator, modrm: &ModRM) -> u32 {
+    // mod == 0b11: r/m
     if modrm.modval == 3 {
         return get_register32(emu, modrm.rm.try_into().unwrap());
+    // mod == 0b00, 0b01, 0b10: [r/m (+ disp8/disp32)]
     } else {
         let address = calc_memory_address(emu, modrm);
         return get_memory32(emu, address.try_into().unwrap());

@@ -108,7 +108,7 @@ fn main() {
 
         // TODO: when does a program finish?
         if emu.eip >= len as usize {
-            println!("\nend of program\n");
+            println!("\nend of program \n");
             break;
         }
     }
