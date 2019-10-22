@@ -55,9 +55,9 @@ pub fn add_rm32_imm8(emu: &mut Emulator, modrm: &ModRM) {
 // SUB r/m32, imm8 (83 /5 ib): Subtract sign-extended imm8 from r/m32.
 pub fn sub_rm32_imm8(emu: &mut Emulator, modrm: &ModRM) {
     let rm32 = get_rm32(emu, &modrm);
-    let imm8 = get_sign_code8(emu, 0);
+    let imm8 = get_sign_code8(emu, 0) as u32;
     emu.eip += 1;
-    set_rm32(emu, &modrm, (rm32 as i32 - imm8) as u32);
+    set_rm32(emu, &modrm, rm32 - imm8);
 }
 
 // INC r/m32 (FF /0): Increment r/m doubleword by 1.
@@ -84,7 +84,7 @@ pub fn push_imm32(emu: &mut Emulator) {
 // PUSH imm8 (6A ib): Push imm8.
 pub fn push_imm8(emu: &mut Emulator) {
     let value = get_code8(emu, 1);
-    push32(emu, value);
+    push32(emu, value.into());
     emu.eip += 1;
 }
 
@@ -117,14 +117,14 @@ pub fn cmp_r32_rm32(emu: &mut Emulator) {
 
 // JMP rel8 (EB cb): Jump short, relative, displacement relative to next instruction.
 pub fn short_jump(emu: &mut Emulator) {
-    let diff = get_sign_code8(emu, 1) as usize;
-    emu.eip += diff + 2;
+    let diff = get_sign_code8(emu, 1);
+    emu.eip = emu.eip.wrapping_add((diff + 2) as usize);
 }
 
 // JMP rel32 (E9 cd): Jump near, relative, RIP = RIP + 32-bit displacement sign extended to 64-bits.
 pub fn near_jump(emu: &mut Emulator) {
-    let diff = get_sign_code32(emu, 1) as usize;
-    emu.eip += diff + 5;
+    let diff = get_sign_code32(emu, 1);
+    emu.eip = emu.eip.wrapping_add((diff + 5) as usize);
 }
 
 // JO (70): Jump if overflow.
@@ -133,7 +133,7 @@ pub fn jo(emu: &mut Emulator) {
     if is_overflow(emu) {
         diff = get_sign_code8(emu, 1);
     }
-    emu.eip += (diff + 2) as usize;
+    emu.eip = emu.eip.wrapping_add((diff + 2) as usize);
 }
 
 // JNO (71): Jump if not overflow.
@@ -142,7 +142,7 @@ pub fn jno(emu: &mut Emulator) {
     if !is_overflow(emu) {
         diff = get_sign_code8(emu, 1);
     }
-    emu.eip += (diff + 2) as usize;
+    emu.eip = emu.eip.wrapping_add((diff + 2) as usize);
 }
 
 // JC (72): Jump if carry.
@@ -151,7 +151,7 @@ pub fn jc(emu: &mut Emulator) {
     if is_carry(emu) {
         diff = get_sign_code8(emu, 1);
     }
-    emu.eip += (diff + 2) as usize;
+    emu.eip = emu.eip.wrapping_add((diff + 2) as usize);
 }
 
 // JNC (73): Jump if not carry.
@@ -160,7 +160,7 @@ pub fn jnc(emu: &mut Emulator) {
     if !is_carry(emu) {
         diff = get_sign_code8(emu, 1);
     }
-    emu.eip += (diff + 2) as usize;
+    emu.eip = emu.eip.wrapping_add((diff + 2) as usize);
 }
 
 // JZ (74): Jump if zero.
@@ -169,7 +169,7 @@ pub fn jz(emu: &mut Emulator) {
     if is_zero(emu) {
         diff = get_sign_code8(emu, 1);
     }
-    emu.eip += (diff + 2) as usize;
+    emu.eip = emu.eip.wrapping_add((diff + 2) as usize);
 }
 
 // JNZ (75): Jump if not zero.
@@ -178,7 +178,7 @@ pub fn jnz(emu: &mut Emulator) {
     if !is_zero(emu) {
         diff = get_sign_code8(emu, 1);
     }
-    emu.eip += (diff + 2) as usize;
+    emu.eip = emu.eip.wrapping_add((diff + 2) as usize);
 }
 
 // JS (78): Jump if sign.
@@ -187,7 +187,7 @@ pub fn js(emu: &mut Emulator) {
     if is_sign(emu) {
         diff = get_sign_code8(emu, 1);
     }
-    emu.eip += (diff + 2) as usize;
+    emu.eip = emu.eip.wrapping_add((diff + 2) as usize);
 }
 
 // JNS (79): Jump if not sign.
@@ -196,7 +196,7 @@ pub fn jns(emu: &mut Emulator) {
     if !is_sign(emu) {
         diff = get_sign_code8(emu, 1);
     }
-    emu.eip += (diff + 2) as usize;
+    emu.eip = emu.eip.wrapping_add((diff + 2) as usize);
 }
 
 // JE (7C): Jump if less (short jump).
@@ -206,7 +206,7 @@ pub fn jl(emu: &mut Emulator) {
     if is_sign(emu) != is_overflow(emu) {
         diff = get_sign_code8(emu, 1);
     }
-    emu.eip += (diff + 2) as usize;
+    emu.eip = emu.eip.wrapping_add((diff + 2) as usize);
 }
 
 // JLE (7C): Jump if less or equal (short jump).
@@ -216,7 +216,7 @@ pub fn jle(emu: &mut Emulator) {
     if is_zero(emu) || (is_sign(emu) != is_overflow(emu)) {
         diff = get_sign_code8(emu, 1);
     }
-    emu.eip += (diff + 2) as usize;
+    emu.eip = emu.eip.wrapping_add((diff + 2) as usize);
 }
 
 // CALL rel32 (E8 cd): Call near, relative, displacement relative to next
@@ -224,7 +224,7 @@ pub fn jle(emu: &mut Emulator) {
 pub fn call_rel32(emu: &mut Emulator) {
     let diff = get_sign_code32(emu, 1) as usize;
     push32(emu, (emu.eip + 5).try_into().unwrap());
-    emu.eip += diff + 5;
+    emu.eip = emu.eip.wrapping_add((diff + 5) as usize);
 }
 
 // RET (C3): Near return to calling procedure.

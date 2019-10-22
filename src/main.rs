@@ -74,10 +74,28 @@ fn create_emu(eip: usize, esp: u32) -> Emulator {
 }
 
 fn dump_registers(emu: &mut Emulator) {
+    println!("----- registers -----");
     for i in 0..REGISTERS_COUNT {
         println!("{0} = {1}", REGISTERS_NAME[i], get_register32(emu, i));
     }
     println!("EIP = {}", emu.eip);
+}
+
+fn dump_stack(emu: &mut Emulator) {
+    println!("----- stack -----");
+    for i in 0..10 {
+        let address = emu.regs[ESP] - 4 * i;
+        let value = get_memory32(emu, address.try_into().unwrap());
+        println!("stack [{}]: {}", address, value);
+    }
+}
+
+fn dump_eflags(emu: &Emulator) {
+    println!("----- eflags -----");
+    println!("carry: {}", emu.eflags & 1);
+    println!("zero: {}", (emu.eflags & (1 << 6)) >> 6);
+    println!("sign: {}", (emu.eflags & (1 << 7)) >> 7);
+    println!("overflow: {}", (emu.eflags & (1 << 11)) >> 11);
 }
 
 fn main() {
@@ -96,7 +114,7 @@ fn main() {
 
     while emu.eip < MEMORY_SIZE {
         let code = get_code8(&mut emu, 0) as usize;
-        println!("eip = {}, code = {}", emu.eip, code);
+        println!("eip = {}, code = {} ({:x})", emu.eip, code, code);
 
         if instructions[code] as usize == nop as usize {
             println!("not implemented: {0}", code);
@@ -107,11 +125,13 @@ fn main() {
         instructions[code](&mut emu);
 
         // TODO: when does a program finish?
-        if emu.eip >= len as usize {
+        if emu.eip >= len as usize || emu.eip == 0 {
             println!("\nend of program \n");
             break;
         }
     }
 
+    dump_stack(&mut emu);
     dump_registers(&mut emu);
+    dump_eflags(&emu);
 }

@@ -7,12 +7,12 @@ const ZERO_FLAG: u32 = 1 << 6;
 const SIGN_FLAG: u32 = 1 << 7;
 const OVERFLOW_FLAG: u32 = 1 << 11;
 
-pub fn get_code8(emu: &mut Emulator, index: usize) -> u32 {
-    return emu.mem[emu.eip + index] as u32;
+pub fn get_code8(emu: &mut Emulator, index: usize) -> u8 {
+    return emu.mem[emu.eip + index];
 }
 
-pub fn get_sign_code8(emu: &mut Emulator, index: usize) -> i32 {
-    return emu.mem[emu.eip + index] as i32;
+pub fn get_sign_code8(emu: &mut Emulator, index: usize) -> i8 {
+    return emu.mem[emu.eip + index] as i8;
 }
 
 pub fn get_code32(emu: &mut Emulator, index: usize) -> u32 {
@@ -20,7 +20,7 @@ pub fn get_code32(emu: &mut Emulator, index: usize) -> u32 {
 
     // Little endian.
     for i in 0..4 {
-        ret |= get_code8(emu, index + i) << (i * 8);
+        ret |= (get_code8(emu, index + i) as u32) << (i * 8);
     }
     return ret;
 }
