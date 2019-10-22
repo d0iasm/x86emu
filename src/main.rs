@@ -90,7 +90,7 @@ fn dump_stack(emu: &mut Emulator) {
     }
 }
 
-fn dump_eflags(emu: &Emulator) {
+fn dump_eflags(emu: &mut Emulator) {
     println!("----- eflags -----");
     println!("carry: {}", emu.eflags & 1);
     println!("zero: {}", (emu.eflags & (1 << 6)) >> 6);
@@ -109,14 +109,16 @@ fn main() {
     let mut emu = create_emu(0x7c00, 0x7c00);
     let len = read_binary(&mut emu, &args[1]) + 0x7c00;
 
-    let mut instructions: Insts = [nop; 256];
+    let mut instructions: Insts = [undefined; 256];
     init_instructions(&mut instructions);
 
     while emu.eip < MEMORY_SIZE {
         let code = get_code8(&mut emu, 0) as usize;
         println!("eip = {}, code = {} ({:x})", emu.eip, code, code);
+        //dump_registers(&mut emu);
+        //println!("");
 
-        if instructions[code] as usize == nop as usize {
+        if instructions[code] as usize == undefined as usize {
             println!("not implemented: {0}", code);
             break;
         }
@@ -133,5 +135,5 @@ fn main() {
 
     dump_stack(&mut emu);
     dump_registers(&mut emu);
-    dump_eflags(&emu);
+    dump_eflags(&mut emu);
 }

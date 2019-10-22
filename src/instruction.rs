@@ -99,10 +99,10 @@ pub fn pop_r32(emu: &mut Emulator) {
 // CMP r/m32, imm8 (83 /7 ib): Compare imm8 with r/m32.
 pub fn cmp_rm32_imm8(emu: &mut Emulator, modrm: &ModRM) {
     let rm32 = get_rm32(emu, modrm);
-    let imm8 = get_sign_code8(emu, 0) as u32;
+    let imm8 = get_sign_code8(emu, 0);
     emu.eip += 1;
-    let result = rm32 - imm8;
-    update_eflags_sub(emu, rm32, imm8, result.into())
+    let result = rm32.wrapping_sub(imm8 as u32);
+    update_eflags_sub(emu, rm32, imm8.try_into().unwrap(), result.try_into().unwrap())
 }
 
 // CMP r32, r/m32 (3B /r): Compare r/m32 with r32.
@@ -209,7 +209,17 @@ pub fn jl(emu: &mut Emulator) {
     emu.eip = emu.eip.wrapping_add((diff + 2) as usize);
 }
 
-// JLE (7C): Jump if less or equal (short jump).
+// JGE (7D): Jump if greater or equal (short jump).
+pub fn jge(emu: &mut Emulator) {
+    let mut diff = 0;
+    // SF = OF
+    if is_sign(emu) == is_overflow(emu) {
+        diff = get_sign_code8(emu, 1);
+    }
+    emu.eip = emu.eip.wrapping_add((diff + 2) as usize);
+}
+
+// JLE (7E): Jump if less or equal (short jump).
 pub fn jle(emu: &mut Emulator) {
     let mut diff = 0;
     // ZF = 1 or SF != OF
@@ -219,10 +229,20 @@ pub fn jle(emu: &mut Emulator) {
     emu.eip = emu.eip.wrapping_add((diff + 2) as usize);
 }
 
+// JG (7F): Jump if greater (short jump).
+pub fn jg(emu: &mut Emulator) {
+    let mut diff = 0;
+    // ZF = 0 and SF = OF
+    if !is_zero(emu) && (is_sign(emu) == is_overflow(emu)) {
+        diff = get_sign_code8(emu, 1);
+    }
+    emu.eip = emu.eip.wrapping_add((diff + 2) as usize);
+}
+
 // CALL rel32 (E8 cd): Call near, relative, displacement relative to next
 // instruction. 32-bit displacement sign extended to 64-bits in 64-bit mode.
 pub fn call_rel32(emu: &mut Emulator) {
-    let diff = get_sign_code32(emu, 1) as usize;
+    let diff = get_sign_code32(emu, 1);
     push32(emu, (emu.eip + 5).try_into().unwrap());
     emu.eip = emu.eip.wrapping_add((diff + 5) as usize);
 }
@@ -272,7 +292,11 @@ pub fn code_ff(emu: &mut Emulator) {
 }
 
 // NOP (NP 90): One byte no-operation instruction.
-pub fn nop(_emu: &mut Emulator) {
+pub fn nop(emu: &mut Emulator) {
+    emu.eip += 1;
+}
+
+pub fn undefined(_emu: &mut Emulator) {
 }
 
 pub fn init_instructions(instructions: &mut Insts) {
@@ -299,11 +323,15 @@ pub fn init_instructions(instructions: &mut Insts) {
     instructions[0x78] = js;
     instructions[0x79] = jns;
     instructions[0x7C] = jl;
+    instructions[0x7D] = jge;
     instructions[0x7E] = jle;
+    instructions[0x7F] = jg;
 
     instructions[0x83] = code_83;
     instructions[0x89] = mov_rm32_r32;
     instructions[0x8B] = mov_r32_rm32;
+
+    instructions[0x90] = nop;
 
 	for i in 0..8 {
         instructions[0xB8 + i] = mov_r32_imm32;
