@@ -161,54 +161,57 @@ https://godbolt.org/z/PIHnBZ
 
 code
 ``` c
+int main() {
+  return fib(5);
+}
+
 int fib(int n) {
   if (n <= 1)
    return n;
   return fib(n-1) + fib(n-2);
 }
-
-int main() {
-  return fib(5);
-}
 ```
 
 asm
 ``` asm
-fib(int):
- push   rbp
- mov    rbp,rsp
- push   rbx
- sub    rsp,0x18
- mov    DWORD PTR [rbp-0x14],edi
- cmp    DWORD PTR [rbp-0x14],0x1
- jg     400539 <fib(int)+0x17>
- mov    eax,DWORD PTR [rbp-0x14]
- jmp    400557 <fib(int)+0x35>
- mov    eax,DWORD PTR [rbp-0x14]
- sub    eax,0x1
- mov    edi,eax
- call   400522 <fib(int)>
- mov    ebx,eax
- mov    eax,DWORD PTR [rbp-0x14]
- sub    eax,0x2
- mov    edi,eax
- call   400522 <fib(int)>
- add    eax,ebx
- add    rsp,0x18
- pop    rbx
- pop    rbp
- ret
-main:
- push   rbp
- mov    rbp,rsp
- mov    edi,0x5
- call   400522 <fib(int)>
- mov    eax,0x0
- pop    rbp
- ret
+0x0000000000000000:  55                push ebp
+0x0000000000000001:  89 E5             mov  ebp, esp
+0x0000000000000003:  BF 0A 00 00 00    mov  edi, 0xa
+0x0000000000000008:  E8 03 00 00 00    call 0x10
+0x000000000000000d:  90                nop
+0x000000000000000e:  5D                pop  ebp
+0x000000000000000f:  C3                ret
+0x0000000000000010:  55                push ebp
+0x0000000000000011:  89 E5             mov  ebp, esp
+0x0000000000000013:  53                push ebx
+0x0000000000000014:  83 EC 18          sub  esp, 0x18
+0x0000000000000017:  89 7D EC          mov  dword ptr [ebp - 0x14], edi
+0x000000000000001a:  83 7D EC 01       cmp  dword ptr [ebp - 0x14], 1
+0x000000000000001e:  7F 05             jg   0x25
+0x0000000000000020:  8B 45 EC          mov  eax, dword ptr [ebp - 0x14]
+0x0000000000000023:  EB 1E             jmp  0x43
+0x0000000000000025:  8B 45 EC          mov  eax, dword ptr [ebp - 0x14]
+0x0000000000000028:  83 E8 01          sub  eax, 1
+0x000000000000002b:  89 C7             mov  edi, eax
+0x000000000000002d:  E8 DE FF FF FF    call 0x10
+0x0000000000000032:  89 C3             mov  ebx, eax
+0x0000000000000034:  8B 45 EC          mov  eax, dword ptr [ebp - 0x14]
+0x0000000000000037:  83 E8 02          sub  eax, 2
+0x000000000000003a:  89 C7             mov  edi, eax
+0x000000000000003c:  E8 CF FF FF FF    call 0x10
+0x0000000000000041:  01 D8             add  eax, ebx
+0x0000000000000043:  83 C4 18          add  esp, 0x18
+0x0000000000000046:  5B                pop  ebx
+0x0000000000000047:  5D                pop  ebp
+0x0000000000000048:  C3                ret
 ```
 
 binary
 ```
-55 48 89 e5 53 48 83 ec 18 89 7d ec 83 7d ec 01 7f 05 8b 45 ec eb 1e 8b 45 ec 83 e8 01 89 c7 e8 00 00 00 00 89 c3 8b 45 ec 83 e8 02 89 c7 e8 00 00 00 00 01 d8 48 83 c4 18 5b 5d c3 55 48 89 e5 bf 05 00 00 00 e8 00 00 00 00 b8 00 00 00 00 5d c3
+0000000 55 89 e5 bf 0a 00 00 00 e8 03 00 00 00 90 5d c3
+0000010 55 89 e5 53 83 ec 18 89 7d ec 83 7d ec 01 7f 05
+0000020 8b 45 ec eb 1e 8b 45 ec 83 e8 01 89 c7 e8 de ff
+0000030 ff ff 89 c3 8b 45 ec 83 e8 02 89 c7 e8 cf ff ff
+0000040 ff 01 d8 83 c4 18 5b 5d c3
+0000049
 ```
