@@ -96,6 +96,25 @@ pub fn pop_r32(emu: &mut Emulator) {
     emu.eip += 1;
 }
 
+// CMP r/m32, imm8 (83 /7 ib): Compare imm8 with r/m32.
+pub fn cmp_rm32_imm8(emu: &mut Emulator, modrm: &ModRM) {
+    let rm32 = get_rm32(emu, modrm);
+    let imm8 = get_sign_code8(emu, 0) as u32;
+    emu.eip += 1;
+    let result = rm32 - imm8;
+    update_eflags_sub(emu, rm32, imm8, result.into())
+}
+
+// CMP r32, r/m32 (3B /r): Compare r/m32 with r32.
+pub fn cmp_r32_rm32(emu: &mut Emulator) {
+    emu.eip += 1;
+    let modrm = parse_modrm(emu);
+    let r32 = get_r32(emu, &modrm);
+    let rm32 = get_rm32(emu, &modrm);
+    let result = r32 - rm32;
+    update_eflags_sub(emu, r32, rm32, result.into())
+}
+
 // JMP rel8 (EB cb): Jump short, relative, displacement relative to next instruction.
 pub fn short_jump(emu: &mut Emulator) {
     let diff = get_sign_code8(emu, 1) as usize;
@@ -106,6 +125,98 @@ pub fn short_jump(emu: &mut Emulator) {
 pub fn near_jump(emu: &mut Emulator) {
     let diff = get_sign_code32(emu, 1) as usize;
     emu.eip += diff + 5;
+}
+
+// JO (70): Jump if overflow.
+pub fn jo(emu: &mut Emulator) {
+    let mut diff = 0;
+    if is_overflow(emu) {
+        diff = get_sign_code8(emu, 1);
+    }
+    emu.eip += (diff + 2) as usize;
+}
+
+// JNO (71): Jump if not overflow.
+pub fn jno(emu: &mut Emulator) {
+    let mut diff = 0;
+    if !is_overflow(emu) {
+        diff = get_sign_code8(emu, 1);
+    }
+    emu.eip += (diff + 2) as usize;
+}
+
+// JC (72): Jump if carry.
+pub fn jc(emu: &mut Emulator) {
+    let mut diff = 0;
+    if is_carry(emu) {
+        diff = get_sign_code8(emu, 1);
+    }
+    emu.eip += (diff + 2) as usize;
+}
+
+// JNC (73): Jump if not carry.
+pub fn jnc(emu: &mut Emulator) {
+    let mut diff = 0;
+    if !is_carry(emu) {
+        diff = get_sign_code8(emu, 1);
+    }
+    emu.eip += (diff + 2) as usize;
+}
+
+// JZ (74): Jump if zero.
+pub fn jz(emu: &mut Emulator) {
+    let mut diff = 0;
+    if is_zero(emu) {
+        diff = get_sign_code8(emu, 1);
+    }
+    emu.eip += (diff + 2) as usize;
+}
+
+// JNZ (75): Jump if not zero.
+pub fn jnz(emu: &mut Emulator) {
+    let mut diff = 0;
+    if !is_zero(emu) {
+        diff = get_sign_code8(emu, 1);
+    }
+    emu.eip += (diff + 2) as usize;
+}
+
+// JS (78): Jump if sign.
+pub fn js(emu: &mut Emulator) {
+    let mut diff = 0;
+    if is_sign(emu) {
+        diff = get_sign_code8(emu, 1);
+    }
+    emu.eip += (diff + 2) as usize;
+}
+
+// JNS (79): Jump if not sign.
+pub fn jns(emu: &mut Emulator) {
+    let mut diff = 0;
+    if !is_sign(emu) {
+        diff = get_sign_code8(emu, 1);
+    }
+    emu.eip += (diff + 2) as usize;
+}
+
+// JE (7C): Jump if less (short jump).
+pub fn jl(emu: &mut Emulator) {
+    let mut diff = 0;
+    // SF != OF
+    if is_sign(emu) != is_overflow(emu) {
+        diff = get_sign_code8(emu, 1);
+    }
+    emu.eip += (diff + 2) as usize;
+}
+
+// JLE (7C): Jump if less or equal (short jump).
+pub fn jle(emu: &mut Emulator) {
+    let mut diff = 0;
+    // ZF = 1 or SF != OF
+    if is_zero(emu) || (is_sign(emu) != is_overflow(emu)) {
+        diff = get_sign_code8(emu, 1);
+    }
+    emu.eip += (diff + 2) as usize;
 }
 
 // CALL rel32 (E8 cd): Call near, relative, displacement relative to next
@@ -138,6 +249,7 @@ pub fn code_83(emu: &mut Emulator) {
     match modrm.opecode {
         0 => { add_rm32_imm8(emu, &modrm); }
         5 => { sub_rm32_imm8(emu, &modrm); }
+        7 => { cmp_rm32_imm8(emu, &modrm); }
         _ => {
             println!("not implemented 83 {}", modrm.opecode);
             process::exit(1);
@@ -166,6 +278,8 @@ pub fn nop(_emu: &mut Emulator) {
 pub fn init_instructions(instructions: &mut Insts) {
     instructions[0x01] = add_rm32_r32;
 
+    instructions[0x3B] = cmp_r32_rm32;
+
     for i in 0..8 {
         instructions[0x50 + i] = push_r32;
     }
@@ -175,6 +289,17 @@ pub fn init_instructions(instructions: &mut Insts) {
 
     instructions[0x68] = push_imm32;
     instructions[0x6A] = push_imm8;
+
+    instructions[0x70] = jo;
+    instructions[0x71] = jno;
+    instructions[0x72] = jc;
+    instructions[0x73] = jnc;
+    instructions[0x74] = jz;
+    instructions[0x75] = jnz;
+    instructions[0x78] = js;
+    instructions[0x79] = jns;
+    instructions[0x7C] = jl;
+    instructions[0x7E] = jle;
 
     instructions[0x83] = code_83;
     instructions[0x89] = mov_rm32_r32;

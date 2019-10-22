@@ -7,7 +7,7 @@ use crate::*;
 //   |  mod  |    reg    |     rm    |
 //   +---+---+---+---+---+---+---+---+
 //   mod: addressing mode.
-//   reg: two meanings; opcode extension and register reference..
+//   reg: two meanings; opcode extension and register reference.
 //   rm: a direct or indirect register operand, optionally with a displacement.
 pub struct ModRM {
     // mod == 0b00: [r/m] register indirect
