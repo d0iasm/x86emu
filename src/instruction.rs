@@ -85,7 +85,7 @@ pub fn push_imm32(emu: &mut Emulator) {
 pub fn push_imm8(emu: &mut Emulator) {
     let value = get_code8(emu, 1);
     push32(emu, value.into());
-    emu.eip += 1;
+    emu.eip += 2;
 }
 
 // POP r32 (58 +rd): Pop top of stack into r32; increment stack pointer.
